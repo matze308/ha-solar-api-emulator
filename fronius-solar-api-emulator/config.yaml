@@ -1,5 +1,5 @@
 name: Fronius Solar API Emulator
-version: "1.0.0"
+version: "1.0.1"
 slug: fronius_solar_api_emulator
 description: Simuliert die Fronius Solar API V1 mit Wechselrichter, Batteriespeicher und Smart Meter basierend auf Home Assistant Sensordaten.
 url: https://github.com/matze308/ha-solar-api-emulator
@@ -23,9 +23,9 @@ ports:
   8088/tcp: 8088
 ports_description:
   8088/tcp: Fronius Solar API HTTP Port
-image: ghcr.io/matze308/ha-solar-api-emulator/{arch}
 init: false
 hassio_api: true
+homeassistant_api: true
 hassio_role: default
 auth_api: false
 ingress: false

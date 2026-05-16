@@ -1,6 +1,6 @@
 # Fronius Solar API Emulator - Home Assistant Addon
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Ein Home Assistant Addon, das die Fronius Solar API V1 simuliert. Es emuliert einen Wechselrichter (Inverter), Batteriespeicher (Storage) und Smart Meter basierend auf echten Sensordaten aus Home Assistant.
@@ -13,6 +13,7 @@ Ein Home Assistant Addon, das die Fronius Solar API V1 simuliert. Es emuliert ei
 - **PowerFlow:** `GetPowerFlowRealtimeData` – Echtzeit-Energiefluss
 - **Logger Info:** `GetLoggerInfo`, `GetAPIVersion`
 - **Aktive Geräte:** `GetActiveDeviceInfo`
+- **Lokaler Build:** Kein externes Container-Image nötig – baut direkt aus dem Dockerfile
 
 ## Verwendete Home Assistant Entitäten
 
@@ -36,12 +37,7 @@ Ein Home Assistant Addon, das die Fronius Solar API V1 simuliert. Es emuliert ei
    https://github.com/matze308/ha-solar-api-emulator
    ```
 4. Suche nach **Fronius Solar API Emulator** und installiere es
-
-### Methode 2: Manuell
-
-1. Kopiere den Ordner `fronius-solar-api-emulator` in dein Home Assistant `addons/` Verzeichnis
-2. Gehe zu **Einstellungen → Add-ons → Add-on Store → ⋮ → Check for updates**
-3. Installiere das Addon
+5. Add-on starten – kein GHCR-Image nötig, wird lokal gebaut
 
 ## Konfiguration
 
