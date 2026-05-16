@@ -5,48 +5,49 @@ Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.0.6] - 2026-05-16
+
+### Behoben
+- `GetInverterRealtimeData`: Feldnamen korrigiert gemäß Fronius API Doku Listing 7/11/14:
+  - `DAY_ENERGY` → `DAYENERGY`
+  - `TOTAL_ENERGY` → `TOTALENERGY`
+  - `YEAR_ENERGY` → `YEARENERGY`
+  - Scope=System gibt jetzt `Values`-Objekt statt `Value` zurück (Listing 14)
+- `GetPowerFlowRealtimeData`: Site-Feldnamen korrigiert gemäß Doku Listing 59/60:
+  - `P_PV` → `PPV`
+  - `P_Grid` → `PGrid`
+  - `P_Load` → `PLoad`
+  - `P_Akku` → `PAkku`
+  - Inverter-Felder: `E_Day` → `EDay`, `E_Total` → `ETotal`, `E_Year` → `EYear`
+- Sensor-Rohdaten werden jetzt im Debug-Log ausgegeben (alle Endpunkte)
+
 ## [1.0.5] - 2026-05-16
 
 ### Behoben
-- `GetMeterRealtimeData`: `PowerRealPSum` / `PowerRealPPhase1-3` liefern jetzt den korrekten Wert direkt aus dem Grid-Sensor
-- Falscher Skalierungsfaktor (`* 0.01`) bei den Energiezählern entfernt
-- Strom (CurrentAC) wird nun korrekt aus der absoluten Netzleistung berechnet
-- Debug-Logging für Meter-Werte hinzugefügt
+- `GetMeterRealtimeData`: `PowerRealPSum` liefert jetzt korrekten Grid-Sensor-Wert
+- Falscher Skalierungsfaktor entfernt
 
 ## [1.0.4] - 2026-05-16
 
 ### Hinzugefügt
 - Alle 6 Sensor-Entitäten über Add-on-Konfiguration einstellbar
-- `run.sh` leitet Entitätsnamen als Umgebungsvariablen weiter
-- Deutsche Übersetzungen für alle Konfigurationsoptionen
 
 ## [1.0.3] - 2026-05-16
 
 ### Behoben
-- Alle API-Endpunkte antworten jetzt sowohl auf `.cgi` als auch auf `.fcgi` URLs
+- Alle API-Endpunkte antworten auf `.cgi` und `.fcgi`
 
 ## [1.0.2] - 2026-05-16
 
 ### Behoben
-- `build.yaml` mit korrekten Base-Images pro Architektur ergänzt
-- `Dockerfile`: `ARG BUILD_FROM` erhält nun einen Standardwert
-- `aiohttp` wird jetzt per `pip3` installiert
+- `build.yaml` ergänzt, `Dockerfile` ARG-Standardwert gesetzt
 
 ## [1.0.1] - 2026-05-16
 
-### Geändert
-- `image`-Feld aus `config.yaml` entfernt
-- `homeassistant_api: true` ergänzt
-- `DOCS.md` ergänzt
-
 ### Behoben
-- Installationsfehler durch GHCR `403/401 denied`
+- GHCR 403/401 Installationsfehler
 
 ## [1.0.0] - 2026-05-16
 
 ### Hinzugefügt
-- Initiale Version des Fronius Solar API Emulators
-- HTTP-Server basierend auf Python (aiohttp) für die Fronius Solar API V1
-- `GetAPIVersion`, `GetInverterRealtimeData`, `GetMeterRealtimeData`, `GetStorageRealtimeData`, `GetPowerFlowRealtimeData`, `GetLoggerInfo`, `GetActiveDeviceInfo`
-- Integration mit Home Assistant Supervisor API
-- Konfigurierbare Port-Einstellung und Log-Level
+- Initiale Version

@@ -51,7 +51,8 @@ async def fetch_sensor(session: ClientSession, entity_id: str) -> float:
         async with session.get(url, headers=headers, timeout=ClientTimeout(total=5)) as resp:
             if resp.status == 200:
                 data = await resp.json()
-                return float(data.get("state", 0))
+                val = data.get("state", "0")
+                return float(val)
     except Exception as e:
         log.warning(f"Could not fetch {entity_id}: {e}")
     return 0.0
@@ -66,7 +67,7 @@ async def fetch_all_sensors(session: ClientSession) -> dict:
         fetch_sensor(session, SENSOR_BATTERY),
         fetch_sensor(session, SENSOR_PRODUCTION_TODAY),
     )
-    return {
+    s = {
         "pv":               results[0],
         "power":            results[1],
         "grid":             results[2],
@@ -74,6 +75,8 @@ async def fetch_all_sensors(session: ClientSession) -> dict:
         "battery":          results[4],
         "production_today": results[5],
     }
+    log.debug(f"Sensors: pv={s['pv']}W grid={s['grid']}W bat={s['battery']}W load={s['power']}W soc={s['soc']}% today={s['production_today']}Wh")
+    return s
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +133,10 @@ async def handle_active_device_info(request: web.Request) -> web.Response:
 
 
 async def handle_inverter_realtime(request: web.Request) -> web.Response:
+    """
+    Feldnamen gemaess Fronius Solar API Doku (Listing 7):
+    DAYENERGY, YEARENERGY, TOTALENERGY (kein Unterstrich!), PAC, FAC, IAC, IDC, UAC, UDC
+    """
     scope      = request.rel_url.query.get("Scope", "Device")
     device_id  = request.rel_url.query.get("DeviceId", "1")
     collection = request.rel_url.query.get("DataCollection", "CommonInverterData")
@@ -137,50 +144,57 @@ async def handle_inverter_realtime(request: web.Request) -> web.Response:
     async with ClientSession() as session:
         s = await fetch_all_sensors(session)
 
-    pac        = int(s["pv"])
+    pac        = float(s["pv"])
     day_energy = float(s["production_today"])
     uac = 230.0
     udc = 380.0
     iac = round(pac / (uac * 3), 3) if pac > 0 else 0.0
     idc = round(pac / udc, 3)       if pac > 0 else 0.0
 
+    # Scope=System: Values-Objekt gemaess Listing 14
     if scope == "System":
         return web.json_response({
             "Head": ok_head({"DeviceClass": "Inverter", "Scope": "System"}),
-            "Body": {"Data": {"1": {
-                "DT": 123,
-                "E_Day":   {"Unit": "Wh", "Value": day_energy},
-                "E_Total": {"Unit": "Wh", "Value": day_energy * 365},
-                "E_Year":  {"Unit": "Wh", "Value": day_energy * 250},
-                "P":       {"Unit": "W",  "Value": pac},
-            }}},
+            "Body": {"Data": {
+                "DAYENERGY":   {"Unit": "Wh", "Values": {"1": day_energy}},
+                "PAC":         {"Unit": "W",  "Values": {"1": pac}},
+                "TOTALENERGY": {"Unit": "Wh", "Values": {"1": day_energy * 365}},
+                "YEARENERGY":  {"Unit": "Wh", "Values": {"1": day_energy * 250}},
+            }},
         })
 
     req_args = {"DataCollection": collection, "DeviceClass": "Inverter", "DeviceId": device_id, "Scope": scope}
 
+    # CommonInverterData - Listing 7: DAYENERGY, YEARENERGY, TOTALENERGY (kein Unterstrich)
     if collection == "CommonInverterData":
         data = {
-            "DAY_ENERGY":   {"Unit": "Wh", "Value": day_energy},
-            "DeviceStatus": {"ErrorCode": 0, "LEDColor": 2, "LEDState": 0,
-                             "MgmtTimerRemainingTime": -1, "StateToReset": False, "StatusCode": 7},
+            "DAYENERGY":    {"Unit": "Wh", "Value": day_energy},
+            "DeviceStatus": {
+                "ErrorCode": 0, "LEDColor": 2, "LEDState": 0,
+                "MgmtTimerRemainingTime": -1, "StateToReset": False, "StatusCode": 7,
+            },
             "FAC":          {"Unit": "Hz", "Value": 50.0},
             "IAC":          {"Unit": "A",  "Value": iac},
             "IDC":          {"Unit": "A",  "Value": idc},
             "PAC":          {"Unit": "W",  "Value": pac},
-            "TOTAL_ENERGY": {"Unit": "Wh", "Value": day_energy * 365},
+            "TOTALENERGY":  {"Unit": "Wh", "Value": day_energy * 365},
             "UAC":          {"Unit": "V",  "Value": uac},
             "UDC":          {"Unit": "V",  "Value": udc},
-            "YEAR_ENERGY":  {"Unit": "Wh", "Value": day_energy * 250},
+            "YEARENERGY":   {"Unit": "Wh", "Value": day_energy * 250},
         }
+    # CumulationInverterData - Listing 11/12
     elif collection == "CumulationInverterData":
         data = {
-            "DAY_ENERGY":   {"Unit": "Wh", "Value": day_energy},
+            "DAYENERGY":    {"Unit": "Wh", "Value": day_energy},
             "PAC":          {"Unit": "W",  "Value": pac},
-            "TOTAL_ENERGY": {"Unit": "Wh", "Value": day_energy * 365},
-            "YEAR_ENERGY":  {"Unit": "Wh", "Value": day_energy * 250},
-            "DeviceStatus": {"ErrorCode": 0, "LEDColor": 2, "LEDState": 0,
-                             "MgmtTimerRemainingTime": -1, "StateToReset": False, "StatusCode": 7},
+            "TOTALENERGY":  {"Unit": "Wh", "Value": day_energy * 365},
+            "YEARENERGY":   {"Unit": "Wh", "Value": day_energy * 250},
+            "DeviceStatus": {
+                "ErrorCode": 0, "LEDColor": 2, "LEDState": 0,
+                "MgmtTimerRemainingTime": -1, "StateToReset": False, "StatusCode": 7,
+            },
         }
+    # 3PInverterData - Listing 8
     elif collection == "3PInverterData":
         iac_phase = round(iac / 3, 3)
         data = {
@@ -204,15 +218,14 @@ async def handle_meter_realtime(request: web.Request) -> web.Response:
     async with ClientSession() as session:
         s = await fetch_all_sensors(session)
 
-    # p_sum: positiv = Netzbezug, negativ = Einspeisung (direkt aus Grid-Sensor)
+    # positiv = Netzbezug, negativ = Einspeisung
     p_sum   = float(s["grid"])
     p_phase = round(p_sum / 3, 3)
     uac     = 232.0
-    # Strom aus Leistung berechnen (3-phasig, 232V)
     iac     = round(abs(p_sum) / (uac * 3), 3) if p_sum != 0 else 0.0
     ts      = unix_timestamp()
 
-    log.debug(f"Meter: p_sum={p_sum}W, p_phase={p_phase}W, iac={iac}A")
+    log.debug(f"Meter: PowerRealPSum={p_sum}W")
 
     meter_data = {
         "CurrentACPhase1": iac, "CurrentACPhase2": iac, "CurrentACPhase3": iac,
@@ -221,15 +234,12 @@ async def handle_meter_realtime(request: web.Request) -> web.Response:
         "Enable": 1,
         "EnergyReactiveVArACSumConsumed": 0,
         "EnergyReactiveVArACSumProduced": 0,
-        # Energie-Zaehler (vereinfacht: laufende Zeit * aktuelle Leistung wäre korrekt,
-        # hier als statischer Platzhalter damit Felder nicht 0 sind)
         "EnergyRealWACMinusAbsolute":  int(max(0, -p_sum)),
         "EnergyRealWACPlusAbsolute":   int(max(0,  p_sum)),
         "EnergyRealWACSumConsumed":    int(max(0,  p_sum)),
         "EnergyRealWACSumProduced":    int(max(0, -p_sum)),
         "FrequencyPhaseAverage": 50.0,
         "MeterLocationCurrent":  0,
-        # Scheinleistung
         "PowerApparentSPhase1": round(abs(p_phase), 3),
         "PowerApparentSPhase2": round(abs(p_phase), 3),
         "PowerApparentSPhase3": round(abs(p_phase), 3),
@@ -238,7 +248,6 @@ async def handle_meter_realtime(request: web.Request) -> web.Response:
         "PowerFactorPhase3": 1.0, "PowerFactorSum":    1.0,
         "PowerReactiveQPhase1": 0, "PowerReactiveQPhase2": 0,
         "PowerReactiveQPhase3": 0, "PowerReactiveQSum":    0,
-        # Wirkleistung - direkt aus Grid-Sensor
         "PowerRealPPhase1": p_phase,
         "PowerRealPPhase2": p_phase,
         "PowerRealPPhase3": p_phase,
@@ -302,6 +311,11 @@ async def handle_storage_realtime(request: web.Request) -> web.Response:
 
 
 async def handle_powerflow_realtime(request: web.Request) -> web.Response:
+    """
+    Feldnamen gemaess Fronius Solar API Doku Listing 59/60:
+    Site-Felder: PPV, PGrid, PLoad, PAkku (kein Unterstrich)
+    Inverter-Felder: EDay, ETotal, EYear, P, SOC, BatteryMode
+    """
     async with ClientSession() as session:
         s = await fetch_all_sensors(session)
 
@@ -314,24 +328,38 @@ async def handle_powerflow_realtime(request: web.Request) -> web.Response:
     e_year  = e_day * 250
     e_total = e_day * 365
 
+    log.debug(f"PowerFlow: PPV={pv}W PGrid={grid}W PLoad={load}W PAkku={bat}W SOC={soc}%")
+
+    # Autonomiegrad und Eigenverbrauch
+    rel_autonomy = min(100.0, round((1 - max(0, grid) / max(1, load)) * 100, 1)) if load > 0 else 100.0
+    rel_self     = min(100.0, round((pv - max(0, -grid)) / max(1, pv) * 100, 1)) if pv > 0 else 0.0
+
     return web.json_response({
         "Head": ok_head({}),
         "Body": {"Data": {
             "Inverters": {"1": {
+                # Inverter-Felder gemaess Listing 59: EDay, ETotal, EYear, P, SOC, BatteryMode
+                "BatteryMode": "normal",
                 "DT": 123,
-                "E_Day": e_day, "E_Total": e_total, "E_Year": e_year,
-                "P": pv, "SOC": soc, "Battery_Mode": "normal",
+                "EDay":   e_day,
+                "ETotal": e_total,
+                "EYear":  e_year,
+                "P":   pv,
+                "SOC": soc,
             }},
             "Site": {
-                "E_Day": e_day, "E_Total": e_total, "E_Year": e_year,
+                # Site-Felder gemaess Listing 59: PPV, PGrid, PLoad, PAkku (KEIN Unterstrich)
+                "EDay":   e_day,
+                "ETotal": e_total,
+                "EYear":  e_year,
                 "Meter_Location": "grid",
                 "Mode": "bidirectional",
-                "P_Akku": bat  if abs(bat)  > 1 else None,
-                "P_Grid": grid if grid != 0  else None,
-                "P_Load": -load if load != 0 else None,
-                "P_PV":   pv   if pv > 0    else None,
-                "rel_Autonomy":        min(100.0, round((1 - max(0, grid) / max(1, load)) * 100, 1)) if load > 0 else 100.0,
-                "rel_SelfConsumption": min(100.0, round((pv - max(0, -grid)) / max(1, pv) * 100, 1)) if pv > 0 else 0.0,
+                "PAkku": bat  if abs(bat)  > 1 else None,
+                "PGrid": grid if grid != 0  else None,
+                "PLoad": -load if load != 0 else None,
+                "PPV":   pv   if pv > 0    else None,
+                "rel_Autonomy":        rel_autonomy,
+                "rel_SelfConsumption": rel_self,
             },
             "Version": "12",
         }},
