@@ -2,30 +2,40 @@
 
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
-Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
-und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
+## [1.0.7] - 2026-05-16
+
+### Behoben
+- Vollständiger Abgleich aller Feldnamen mit der offiziellen Fronius Solar API V1 Dokumentation (42,0410,2012,EN)
+
+**`GetInverterRealtimeData`** (Listing 4, 7, 14):
+- `DAY_ENERGY`, `YEAR_ENERGY`, `TOTAL_ENERGY` (MIT Unterstrich) – korrekter Feldname laut Doku
+- Scope=System: `Values`-Objekt statt `Value` (Listing 14)
+- `3PInverterData`: `IAC_L1`, `IAC_L2`, `IAC_L3`, `UAC_L1`, `UAC_L2`, `UAC_L3` (Listing 8)
+
+**`GetMeterRealtimeData`** (Listing 43, 45):
+- Alle Feldnamen als CamelCase ohne Unterstriche: `CurrentACPhase1`, `PowerRealPSum`, `EnergyRealWACMinusAbsolute` etc.
+- `VoltageACPhaseAverage` ergänzt
+
+**`GetStorageRealtimeData`** (Listing 48):
+- Feldnamen korrigiert: `StateOfCharge_Relative`, `Capacity_Maximum`, `DesignedCapacity`, `Current_DC`, `Voltage_DC`, `Temperature_Cell`, `Status_BatteryCell`, `Voltage_DC_Maximum_Cell`, `Voltage_DC_Minimum_Cell`
+
+**`GetPowerFlowRealtimeData`** (Listing 57-60):
+- Site: `PPV`, `PGrid`, `PLoad`, `PAkku`, `EDay`, `ETotal`, `EYear`, `MeterLocation`, `relAutonomy`, `relSelfConsumption`
+- Inverter: `BatteryMode`, `EDay`, `ETotal`, `EYear`, `P`, `SOC`
+- (keine Unterstriche: nicht `P_PV`, nicht `E_Day`, nicht `rel_Autonomy`)
+
+**`GetActiveDeviceInfo`**:
+- Meter und Storage: `DT: -1` (korrekt laut Doku, Inverter haben DT-Nummern)
 
 ## [1.0.6] - 2026-05-16
 
 ### Behoben
-- `GetInverterRealtimeData`: Feldnamen korrigiert gemäß Fronius API Doku Listing 7/11/14:
-  - `DAY_ENERGY` → `DAYENERGY`
-  - `TOTAL_ENERGY` → `TOTALENERGY`
-  - `YEAR_ENERGY` → `YEARENERGY`
-  - Scope=System gibt jetzt `Values`-Objekt statt `Value` zurück (Listing 14)
-- `GetPowerFlowRealtimeData`: Site-Feldnamen korrigiert gemäß Doku Listing 59/60:
-  - `P_PV` → `PPV`
-  - `P_Grid` → `PGrid`
-  - `P_Load` → `PLoad`
-  - `P_Akku` → `PAkku`
-  - Inverter-Felder: `E_Day` → `EDay`, `E_Total` → `ETotal`, `E_Year` → `EYear`
-- Sensor-Rohdaten werden jetzt im Debug-Log ausgegeben (alle Endpunkte)
+- Erster Versuch Feldnamen-Korrektur (teilweise falsch)
 
 ## [1.0.5] - 2026-05-16
 
 ### Behoben
-- `GetMeterRealtimeData`: `PowerRealPSum` liefert jetzt korrekten Grid-Sensor-Wert
-- Falscher Skalierungsfaktor entfernt
+- `GetMeterRealtimeData`: `PowerRealPSum` liefert korrekten Grid-Sensor-Wert
 
 ## [1.0.4] - 2026-05-16
 
