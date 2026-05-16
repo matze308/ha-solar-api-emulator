@@ -1,11 +1,13 @@
 # Fronius Solar API Emulator – Home Assistant Add-on
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue)](CHANGELOG.md)
 [![HA Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-41bdf5)](https://www.home-assistant.io/addons)
 
-Dieses Home Assistant Add-on emuliert eine **Fronius Solar API V1**-Schnittstelle (Dokumentation: [42,0410,2012,EN](https://www.fronius.com/~/downloads/Solar%20Energy/Operating%20Instructions/42,0410,2012.pdf)) vollständig.
+Dieses Home Assistant Add-on emuliert eine **Fronius Solar API V1**-Schnittstelle vollständig.
 
-Externe Energiemanagement-Systeme wie **Solar Manager**, **evcc**, **SolarEdge** oder andere, die eine Fronius-Schnittstelle erwarten, können so die Echtzeitdaten deiner Home Assistant Sensoren abfragen – ohne echten Fronius-Wechselrichter.
+Externe Energiemanagement-Systeme wie **Solar Manager**, **evcc** oder andere,
+die eine Fronius-Schnittstelle erwarten, können so die Echtzeitdaten deiner
+Home Assistant Sensoren abfragen – ohne echten Fronius-Wechselrichter.
 
 ## Emulierte Geräte
 
@@ -39,7 +41,6 @@ Alle Endpunkte sind sowohl als `.cgi` als auch als `.fcgi` erreichbar.
 3. **Konfigurieren** – Sensornamen anpassen:
 
 ```yaml
-port: 8088
 log_level: info
 sensor_pv: sensor.solar_manager_power_pv
 sensor_power: sensor.solar_manager_power
@@ -49,24 +50,24 @@ sensor_battery: sensor.solar_manager_power_battery
 sensor_production_today: sensor.solar_manager_production_today
 ```
 
-4. **Add-on starten** – Die API ist dann erreichbar unter:
+4. **Host-Port anpassen** (optional): Im *Netzwerk*-Tab des Add-ons kann der
+   nach außen exponierte Port geändert werden (Standard: `8088`).
+
+5. **Add-on starten** – Die API ist dann erreichbar unter:
    ```
    http://<HA-IP>:8088/solar_api/v1/GetPowerFlowRealtimeData.fcgi
    ```
 
 ## Automatische Einheiten-Konvertierung
 
-Das Add-on liest die `unit_of_measurement` jedes Sensors direkt aus den HA-Attributen
+Das Add-on liest die `unit_of_measurement` jedes Sensors aus den HA-Attributen
 und konvertiert automatisch:
 
-| Sensor-Einheit | Wird umgerechnet zu | Faktor |
+| Sensor-Einheit | Wird zu | Faktor |
 |---|---|---|
 | `kW` | `W` | ×1000 |
 | `kWh` | `Wh` | ×1000 |
-| `kVA`, `kvar` | `VA`, `var` | ×1000 |
 | `W`, `Wh`, `%` | unveraendert | ×1 |
-
-Damit funktioniert das Add-on sowohl mit Sensoren in W als auch in kW.
 
 ## Sensor-Bedeutung
 
@@ -78,15 +79,6 @@ Damit funktioniert das Add-on sowohl mit Sensoren in W als auch in kW.
 | `sensor_soc` | Batterieladezustand | % |
 | `sensor_battery` | Batterieleistung (+ Laden, − Entladen) | W oder kW |
 | `sensor_production_today` | PV-Erzeugung heute | Wh oder kWh |
-
-## Feldname-Konformität
-
-Alle zurückgegebenen Feldnamen entsprechen **exakt** der offiziellen Fronius Solar API V1 Dokumentation:
-
-- **GetMeterRealtimeData**: `Current_AC_Phase_1`, `PowerReal_P_Sum`, `EnergyReal_WAC_Minus_Absolute` ...
-- **GetStorageRealtimeData**: `StateOfCharge_Relative`, `Capacity_Maximum`, `Current_DC` ...
-- **GetPowerFlowRealtimeData**: `P_PV`, `P_Grid`, `P_Load`, `P_Akku`, `E_Day`, `rel_Autonomy` ...
-- **GetInverterRealtimeData**: `DAY_ENERGY`, `YEAR_ENERGY`, `TOTAL_ENERGY`, `PAC`, `IAC` ...
 
 ## Changelog
 

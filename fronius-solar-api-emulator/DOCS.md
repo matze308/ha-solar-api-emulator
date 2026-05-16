@@ -1,6 +1,6 @@
 # Fronius Solar API Emulator – Dokumentation
 
-Dieses Add-on emuliert die **Fronius Solar API V1** (Dokumentation: 42,0410,2012,EN) vollständig, sodass externe Systeme wie **Solar Manager**, **evcc** oder andere Energiemanager den Fronius-Wechselrichter inkl. Batterie und Smart Meter abfragen können.
+Dieses Add-on emuliert die **Fronius Solar API V1** (Dokumentation: 42,0410,2012,EN) vollständig.
 
 ## Emulierte API-Endpunkte
 
@@ -17,10 +17,19 @@ Dieses Add-on emuliert die **Fronius Solar API V1** (Dokumentation: 42,0410,2012
 
 Alle Endpunkte sind sowohl als `.cgi` als auch als `.fcgi` erreichbar.
 
+## Port
+
+Der **interne Port ist fest auf `8088`** gesetzt. Der nach außen exponierte Host-Port
+kann in der Add-on-Konfiguration unter *Netzwerk* geändert werden.
+
+Standard-Zugriff:
+```
+http://<HA-IP>:8088/solar_api/v1/GetPowerFlowRealtimeData.fcgi
+```
+
 ## Konfiguration
 
 ```yaml
-port: 8088
 log_level: info
 sensor_pv: sensor.solar_manager_power_pv
 sensor_power: sensor.solar_manager_power
@@ -32,29 +41,13 @@ sensor_production_today: sensor.solar_manager_production_today
 
 ### Sensor-Bedeutung
 
-| Option | Bedeutung | Einheit |
+| Option | Bedeutung | Unterstützte Einheiten |
 |---|---|---|
-| `sensor_pv` | PV-Erzeugungsleistung | W |
-| `sensor_power` | Hausverbrauch (Load) | W |
-| `sensor_grid` | Netzleistung (+ Bezug, − Einspeisung) | W |
+| `sensor_pv` | PV-Erzeugungsleistung | W, kW |
+| `sensor_power` | Hausverbrauch (Load) | W, kW |
+| `sensor_grid` | Netzleistung (+ Bezug, − Einspeisung) | W, kW |
 | `sensor_soc` | Batterieladezustand | % |
-| `sensor_battery` | Batterieleistung (+ Laden, − Entladen) | W |
-| `sensor_production_today` | PV-Erzeugung heute | Wh |
+| `sensor_battery` | Batterieleistung (+ Laden, − Entladen) | W, kW |
+| `sensor_production_today` | PV-Erzeugung heute | Wh, kWh |
 
-## Feldname-Konformität
-
-Die Feldnamen entsprechen exakt der offiziellen Fronius Solar API V1 Dokumentation:
-
-- **GetMeterRealtimeData**: `Current_AC_Phase_1`, `PowerReal_P_Sum`, `EnergyReal_WAC_Minus_Absolute` etc.
-- **GetStorageRealtimeData**: `StateOfCharge_Relative`, `Capacity_Maximum`, `Current_DC` etc.
-- **GetPowerFlowRealtimeData**: `P_PV`, `P_Grid`, `P_Load`, `P_Akku`, `E_Day`, `rel_Autonomy` etc.
-- **GetInverterRealtimeData**: `DAY_ENERGY`, `YEAR_ENERGY`, `TOTAL_ENERGY`, `PAC`, `IAC`, `IDC` etc.
-
-## Zugriff
-
-Nach dem Start ist die API unter `http://<HA-IP>:8088` erreichbar.
-
-Beispiel:
-```
-http://192.168.1.100:8088/solar_api/v1/GetPowerFlowRealtimeData.fcgi
-```
+kW und kWh werden automatisch in W bzw. Wh konvertiert.

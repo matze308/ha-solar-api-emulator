@@ -1,6 +1,7 @@
 #!/usr/bin/with-contenv bashio
 
-export PORT=$(bashio::config 'port')
+# Interner Port ist fest 8088 - nur der Host-Port ist ueber das Port-Mapping aenderbar
+export PORT=8088
 export LOG_LEVEL=$(bashio::config 'log_level')
 export SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN}"
 

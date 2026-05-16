@@ -2,43 +2,36 @@
 
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.2.1] - 2026-05-16
+
+### Geändert
+- Interner Container-Port ist jetzt **fest auf `8088`** gesetzt und nicht mehr
+  über die Add-on-Konfiguration änderbar
+- Der nach außen exponierte Host-Port bleibt wie gehabt über den
+  *Netzwerk*-Tab der Add-on-Konfiguration änderbar (Standard: `8088`)
+- Option `port` aus dem Konfigurationsschema entfernt (war redundant)
+- `run.sh` setzt `PORT=8088` jetzt direkt als Konstante
+
 ## [1.2.0] - 2026-05-16
 
 ### Hinzugefügt
-- **Automatische Einheiten-Konvertierung**: Die `unit_of_measurement` jedes HA-Sensors wird
-  direkt ausgelesen und automatisch konvertiert:
-  - `kW` → `W` (Faktor ×1000) – behebt falsche Werte (z.B. `1.206` statt `1206`)
+- **Automatische Einheiten-Konvertierung**: `unit_of_measurement` wird aus den
+  HA-Sensor-Attributen gelesen und automatisch konvertiert:
+  - `kW` → `W` (Faktor ×1000)
   - `kWh` → `Wh` (Faktor ×1000)
-  - `kVA`, `kvar` → `VA`, `var` (Faktor ×1000)
+  - `kVA`, `kvar` entsprechend
   - `W`, `Wh`, `%` bleiben unveraendert
-- Alle Leistungs- und Energiewerte (PV, Grid, Load, Battery, Production Today)
-  werden jetzt einheitenunabhaengig korrekt in Watt / Wh geliefert
-- Debug-Log zeigt jetzt Rohwert+Einheit und konvertierten Wert
 
 ### Behoben
-- Solar Manager zeigte 1 Watt PV-Leistung obwohl z.B. 1206 W erzeugt wurden,
-  weil der HA-Sensor `sensor.solar_manager_power_pv` in kW liefert
+- Solar Manager zeigte 1 Watt PV-Leistung, weil Sensor in kW lieferte
 
 ## [1.1.0] - 2026-05-16
 
-### Behoben – Kritische Feldnamen-Korrekturen laut Fronius Solar API V1 Doku (42,0410,2012,EN)
+### Behoben – Kritische Feldnamen-Korrekturen laut Fronius Solar API V1 Doku
 
-**`GetMeterRealtimeData`** (Listing 43, 45):
-- Alle Feldnamen jetzt EXAKT mit Unterstrichen wie in der offiziellen Doku:
-  - `Current_AC_Phase_1/2/3`, `Current_AC_Sum`
-  - `PowerReal_P_Sum`, `PowerReal_P_Phase_1/2/3`
-  - `EnergyReal_WAC_Minus_Absolute`, `EnergyReal_WAC_Plus_Absolute`
-  - `EnergyReal_WAC_Sum_Consumed`, `EnergyReal_WAC_Sum_Produced`
-  - `EnergyReactive_VArAC_Sum_Consumed`, `EnergyReactive_VArAC_Sum_Produced`
-  - `Frequency_Phase_Average`, `Meter_Location_Current`
-  - `PowerApparent_S_Phase_1/2/3`, `PowerApparent_S_Sum`
-  - `PowerFactor_Phase_1/2/3`, `PowerFactor_Sum`
-  - `PowerReactive_Q_Phase_1/2/3`, `PowerReactive_Q_Sum`
-  - `Voltage_AC_Phase_1/2/3`, `Voltage_AC_PhaseToPhase_12/23/31`
+**`GetMeterRealtimeData`**: `Current_AC_Phase_1`, `PowerReal_P_Sum`, `EnergyReal_WAC_Minus_Absolute` etc.
 
-**`GetPowerFlowRealtimeData`** (Listing 56-60):
-- `P_PV`, `P_Grid`, `P_Load`, `P_Akku`, `E_Day`, `Meter_Location`, `rel_Autonomy` etc.
-- `BackupMode`, `BatteryStandby`, `Battery_Mode`, `CID` ergänzt
+**`GetPowerFlowRealtimeData`**: `P_PV`, `P_Grid`, `P_Load`, `P_Akku`, `E_Day`, `rel_Autonomy` etc.
 
 ### Hinzugefügt
 - Neuer Endpunkt `GetInverterInfo.cgi`
