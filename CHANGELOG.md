@@ -5,6 +5,13 @@ Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.0.2] - 2026-05-16
+
+### Behoben
+- `build.yaml` mit korrekten Base-Images pro Architektur ergänzt (fehlte komplett)
+- `Dockerfile`: `ARG BUILD_FROM` erhält nun einen Standardwert damit `FROM $BUILD_FROM` nicht leer ist
+- `aiohttp` wird jetzt per `pip3` installiert statt per `apk` (sicherere Methode mit dem Python-Base-Image)
+
 ## [1.0.1] - 2026-05-16
 
 ### Geändert
@@ -27,15 +34,7 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - `GetPowerFlowRealtimeData` für Echtzeit-Energiefluss
 - `GetLoggerInfo` Endpunkt
 - `GetActiveDeviceInfo` Endpunkt
-- Integration mit Home Assistant Supervisor API (Long-Lived Access Token)
-- Liest Echtzeit-Sensordaten aus Home Assistant:
-  - `sensor.solar_manager_power_pv` (PV-Leistung)
-  - `sensor.solar_manager_power` (Hausverbrauch)
-  - `sensor.solar_manager_power_grid` (Netzleistung)
-  - `sensor.solar_manager_soc` (Batterieladezustand)
-  - `sensor.solar_manager_power_battery` (Batterieleistung)
-  - `sensor.solar_manager_production_today` (Tagesertrag)
-- Konfigurierbare Port-Einstellung
-- Konfigurierbares Log-Level
+- Integration mit Home Assistant Supervisor API
+- Konfigurierbare Port-Einstellung und Log-Level
 - Home Assistant Addon Struktur (config.yaml, Dockerfile, run.sh)
 - Repository-Konfiguration für HA Add-on Store (repository.yaml)

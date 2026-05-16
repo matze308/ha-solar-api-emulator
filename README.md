@@ -1,6 +1,6 @@
 # Fronius Solar API Emulator - Home Assistant Addon
 
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Ein Home Assistant Addon, das die Fronius Solar API V1 simuliert. Es emuliert einen Wechselrichter (Inverter), Batteriespeicher (Storage) und Smart Meter basierend auf echten Sensordaten aus Home Assistant.
@@ -28,8 +28,6 @@ Ein Home Assistant Addon, das die Fronius Solar API V1 simuliert. Es emuliert ei
 
 ## Installation
 
-### Methode 1: Über Home Assistant Add-on Store (empfohlen)
-
 1. Gehe zu **Einstellungen → Add-ons → Add-on Store**
 2. Klicke auf das Menü (⋮) oben rechts → **Repositories**
 3. Füge folgende URL hinzu:
@@ -37,7 +35,7 @@ Ein Home Assistant Addon, das die Fronius Solar API V1 simuliert. Es emuliert ei
    https://github.com/matze308/ha-solar-api-emulator
    ```
 4. Suche nach **Fronius Solar API Emulator** und installiere es
-5. Add-on starten – kein GHCR-Image nötig, wird lokal gebaut
+5. Port konfigurieren (Standard: `8088`) und Add-on starten
 
 ## Konfiguration
 
@@ -46,14 +44,9 @@ port: 8088
 log_level: info
 ```
 
-| Option | Beschreibung | Standard |
-|---|---|---|
-| `port` | HTTP-Port des API-Servers | `8088` |
-| `log_level` | Log-Level (debug, info, warning, error) | `info` |
-
 ## API-Endpunkte
 
-Nach dem Start ist die API erreichbar unter: `http://<HA-IP>:8088`
+Nach dem Start erreichbar unter `http://<HA-IP>:8088`:
 
 | Endpunkt | Beschreibung |
 |---|---|
@@ -71,4 +64,4 @@ Siehe [CHANGELOG.md](CHANGELOG.md)
 
 ## Lizenz
 
-MIT License – siehe [LICENSE](LICENSE)
+MIT License
