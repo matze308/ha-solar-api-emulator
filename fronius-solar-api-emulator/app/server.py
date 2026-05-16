@@ -20,7 +20,6 @@ PORT = int(os.environ.get("PORT", 8088))
 SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN", "")
 HA_API = "http://supervisor/core/api"
 
-# Sensor entity IDs - configurable via addon options
 SENSOR_PV               = os.environ.get("SENSOR_PV",               "sensor.solar_manager_power_pv")
 SENSOR_POWER            = os.environ.get("SENSOR_POWER",            "sensor.solar_manager_power")
 SENSOR_GRID             = os.environ.get("SENSOR_GRID",             "sensor.solar_manager_power_grid")
@@ -30,8 +29,7 @@ SENSOR_PRODUCTION_TODAY = os.environ.get("SENSOR_PRODUCTION_TODAY", "sensor.sola
 
 
 def now_timestamp() -> str:
-    now = datetime.now()
-    return now.strftime("%Y-%m-%dT%H%M%S") + "+0200"
+    return datetime.now().strftime("%Y-%m-%dT%H%M%S") + "+0200"
 
 
 def unix_timestamp() -> int:
@@ -162,7 +160,7 @@ async def handle_inverter_realtime(request: web.Request) -> web.Response:
 
     if collection == "CommonInverterData":
         data = {
-            "DAY_ENERGY":   {"Unit": "Wh",  "Value": day_energy},
+            "DAY_ENERGY":   {"Unit": "Wh", "Value": day_energy},
             "DeviceStatus": {"ErrorCode": 0, "LEDColor": 2, "LEDState": 0,
                              "MgmtTimerRemainingTime": -1, "StateToReset": False, "StatusCode": 7},
             "FAC":          {"Unit": "Hz", "Value": 50.0},
@@ -206,40 +204,63 @@ async def handle_meter_realtime(request: web.Request) -> web.Response:
     async with ClientSession() as session:
         s = await fetch_all_sensors(session)
 
+    # p_sum: positiv = Netzbezug, negativ = Einspeisung (direkt aus Grid-Sensor)
     p_sum   = float(s["grid"])
     p_phase = round(p_sum / 3, 3)
     uac     = 232.0
-    iac     = abs(round(p_sum / (uac * 3), 3)) if p_sum != 0 else 0.0
+    # Strom aus Leistung berechnen (3-phasig, 232V)
+    iac     = round(abs(p_sum) / (uac * 3), 3) if p_sum != 0 else 0.0
     ts      = unix_timestamp()
 
+    log.debug(f"Meter: p_sum={p_sum}W, p_phase={p_phase}W, iac={iac}A")
+
     meter_data = {
-        "CurrentACPhase1": round(iac, 3), "CurrentACPhase2": round(iac, 3), "CurrentACPhase3": round(iac, 3),
+        "CurrentACPhase1": iac, "CurrentACPhase2": iac, "CurrentACPhase3": iac,
         "CurrentACSum":    round(iac * 3, 3),
-        "Details":         {"Manufacturer": "Fronius", "Model": "Smart Meter 63A-3", "Serial": "SM-EMULATOR-001"},
+        "Details": {"Manufacturer": "Fronius", "Model": "Smart Meter 63A-3", "Serial": "SM-EMULATOR-001"},
         "Enable": 1,
-        "EnergyReactiveVArACSumConsumed": 0, "EnergyReactiveVArACSumProduced": 0,
-        "EnergyRealWACMinusAbsolute":  int(max(0, -p_sum) * 0.01 * 1000),
-        "EnergyRealWACPlusAbsolute":   int(max(0,  p_sum) * 0.01 * 1000),
-        "EnergyRealWACSumConsumed":    int(max(0,  p_sum) * 0.01 * 1000),
-        "EnergyRealWACSumProduced":    int(max(0, -p_sum) * 0.01 * 1000),
+        "EnergyReactiveVArACSumConsumed": 0,
+        "EnergyReactiveVArACSumProduced": 0,
+        # Energie-Zaehler (vereinfacht: laufende Zeit * aktuelle Leistung wäre korrekt,
+        # hier als statischer Platzhalter damit Felder nicht 0 sind)
+        "EnergyRealWACMinusAbsolute":  int(max(0, -p_sum)),
+        "EnergyRealWACPlusAbsolute":   int(max(0,  p_sum)),
+        "EnergyRealWACSumConsumed":    int(max(0,  p_sum)),
+        "EnergyRealWACSumProduced":    int(max(0, -p_sum)),
         "FrequencyPhaseAverage": 50.0,
         "MeterLocationCurrent":  0,
-        "PowerApparentSPhase1": abs(p_phase), "PowerApparentSPhase2": abs(p_phase), "PowerApparentSPhase3": abs(p_phase),
-        "PowerApparentSSum":    abs(p_sum),
-        "PowerFactorPhase1": 1.0, "PowerFactorPhase2": 1.0, "PowerFactorPhase3": 1.0, "PowerFactorSum": 1.0,
-        "PowerReactiveQPhase1": 0, "PowerReactiveQPhase2": 0, "PowerReactiveQPhase3": 0, "PowerReactiveQSum": 0,
-        "PowerRealPPhase1": round(p_phase, 3), "PowerRealPPhase2": round(p_phase, 3), "PowerRealPPhase3": round(p_phase, 3),
+        # Scheinleistung
+        "PowerApparentSPhase1": round(abs(p_phase), 3),
+        "PowerApparentSPhase2": round(abs(p_phase), 3),
+        "PowerApparentSPhase3": round(abs(p_phase), 3),
+        "PowerApparentSSum":    round(abs(p_sum), 3),
+        "PowerFactorPhase1": 1.0, "PowerFactorPhase2": 1.0,
+        "PowerFactorPhase3": 1.0, "PowerFactorSum":    1.0,
+        "PowerReactiveQPhase1": 0, "PowerReactiveQPhase2": 0,
+        "PowerReactiveQPhase3": 0, "PowerReactiveQSum":    0,
+        # Wirkleistung - direkt aus Grid-Sensor
+        "PowerRealPPhase1": p_phase,
+        "PowerRealPPhase2": p_phase,
+        "PowerRealPPhase3": p_phase,
         "PowerRealPSum":    round(p_sum, 3),
-        "TimeStamp": ts, "Visible": 1,
-        "VoltageACPhaseToPhase12": 400.0, "VoltageACPhaseToPhase23": 400.0, "VoltageACPhaseToPhase31": 400.0,
-        "VoltageACPhase1": uac, "VoltageACPhase2": uac, "VoltageACPhase3": uac, "VoltageACPhaseAverage": uac,
+        "TimeStamp": ts,
+        "Visible": 1,
+        "VoltageACPhaseToPhase12": 400.0,
+        "VoltageACPhaseToPhase23": 400.0,
+        "VoltageACPhaseToPhase31": 400.0,
+        "VoltageACPhase1": uac, "VoltageACPhase2": uac,
+        "VoltageACPhase3": uac, "VoltageACPhaseAverage": uac,
     }
 
     if scope == "System":
-        return web.json_response({"Head": ok_head({"DeviceClass": "Meter", "Scope": "System"}),
-                                  "Body": {"Data": {"0": meter_data}}})
-    return web.json_response({"Head": ok_head({"DeviceClass": "Meter", "DeviceId": device_id, "Scope": "Device"}),
-                              "Body": {"Data": meter_data}})
+        return web.json_response({
+            "Head": ok_head({"DeviceClass": "Meter", "Scope": "System"}),
+            "Body": {"Data": {"0": meter_data}},
+        })
+    return web.json_response({
+        "Head": ok_head({"DeviceClass": "Meter", "DeviceId": device_id, "Scope": "Device"}),
+        "Body": {"Data": meter_data},
+    })
 
 
 async def handle_storage_realtime(request: web.Request) -> web.Response:
@@ -270,10 +291,14 @@ async def handle_storage_realtime(request: web.Request) -> web.Response:
     }
 
     if scope == "System":
-        return web.json_response({"Head": ok_head({"DeviceClass": "Storage", "Scope": "System"}),
-                                  "Body": {"Data": {"0": storage_data}}})
-    return web.json_response({"Head": ok_head({"DeviceClass": "Storage", "DeviceId": device_id, "Scope": "Device"}),
-                              "Body": {"Data": storage_data}})
+        return web.json_response({
+            "Head": ok_head({"DeviceClass": "Storage", "Scope": "System"}),
+            "Body": {"Data": {"0": storage_data}},
+        })
+    return web.json_response({
+        "Head": ok_head({"DeviceClass": "Storage", "DeviceId": device_id, "Scope": "Device"}),
+        "Body": {"Data": storage_data},
+    })
 
 
 async def handle_powerflow_realtime(request: web.Request) -> web.Response:
