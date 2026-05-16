@@ -5,3 +5,21 @@ configuration:
   log_level:
     name: Log Level
     description: Detailgrad der Protokollierung.
+  sensor_pv:
+    name: Sensor PV-Leistung
+    description: Home Assistant Entität für die aktuelle PV-Leistung in Watt.
+  sensor_power:
+    name: Sensor Hausverbrauch
+    description: Home Assistant Entität für den aktuellen Hausverbrauch in Watt.
+  sensor_grid:
+    name: Sensor Netzleistung
+    description: Home Assistant Entität für die Netzleistung in Watt (positiv = Bezug, negativ = Einspeisung).
+  sensor_soc:
+    name: Sensor Batterieladezustand
+    description: Home Assistant Entität für den Batterieladezustand in Prozent.
+  sensor_battery:
+    name: Sensor Batterieleistung
+    description: Home Assistant Entität für die Batterieleistung in Watt (positiv = Laden, negativ = Entladen).
+  sensor_production_today:
+    name: Sensor Tagesertrag
+    description: Home Assistant Entität für den heutigen PV-Ertrag in Wattstunden.

@@ -6,7 +6,7 @@ Es emuliert einen Wechselrichter (Inverter), Batteriespeicher (Storage) und Smar
 ## Installation
 
 1. Add-on installieren
-2. Optional den Port anpassen (Standard: `8088`)
+2. Sensor-Entitäten und Port konfigurieren
 3. Add-on starten
 
 > **Hinweis:** Dieses Add-on baut lokal aus dem Dockerfile und benötigt kein externes Container-Registry-Image.
@@ -16,29 +16,28 @@ Es emuliert einen Wechselrichter (Inverter), Batteriespeicher (Storage) und Smar
 ```yaml
 port: 8088
 log_level: info
+sensor_pv: sensor.solar_manager_power_pv
+sensor_power: sensor.solar_manager_power
+sensor_grid: sensor.solar_manager_power_grid
+sensor_soc: sensor.solar_manager_soc
+sensor_battery: sensor.solar_manager_power_battery
+sensor_production_today: sensor.solar_manager_production_today
 ```
 
 | Option | Beschreibung | Standard |
 |---|---|---|
 | `port` | HTTP-Port der Fronius API | `8088` |
 | `log_level` | Log-Level (debug, info, warning, error) | `info` |
-
-## Verwendete Entitäten
-
-Folgende Home Assistant Sensoren werden für die API-Simulation benötigt:
-
-| Entität | Beschreibung |
-|---|---|
-| `sensor.solar_manager_power_pv` | PV-Leistung in Watt |
-| `sensor.solar_manager_power` | Hausverbrauch in Watt |
-| `sensor.solar_manager_power_grid` | Netzleistung (pos. = Bezug, neg. = Einspeisung) |
-| `sensor.solar_manager_soc` | Batterieladezustand in % |
-| `sensor.solar_manager_power_battery` | Batterieleistung (pos. = Laden, neg. = Entladen) |
-| `sensor.solar_manager_production_today` | Tagesertrag in Wh |
+| `sensor_pv` | Entität für PV-Leistung (W) | `sensor.solar_manager_power_pv` |
+| `sensor_power` | Entität für Hausverbrauch (W) | `sensor.solar_manager_power` |
+| `sensor_grid` | Entität für Netzleistung (W, pos.=Bezug, neg.=Einspeisung) | `sensor.solar_manager_power_grid` |
+| `sensor_soc` | Entität für Batterieladezustand (%) | `sensor.solar_manager_soc` |
+| `sensor_battery` | Entität für Batterieleistung (W, pos.=Laden, neg.=Entladen) | `sensor.solar_manager_power_battery` |
+| `sensor_production_today` | Entität für Tagesertrag (Wh) | `sensor.solar_manager_production_today` |
 
 ## API-Endpunkte
 
-Nach dem Start ist die API erreichbar unter `http://<HA-IP>:8088`:
+Nach dem Start erreichbar unter `http://<HA-IP>:8088` – jeweils als `.cgi` und `.fcgi`:
 
 | Endpunkt | Beschreibung |
 |---|---|
@@ -53,5 +52,5 @@ Nach dem Start ist die API erreichbar unter `http://<HA-IP>:8088`:
 ## Beispielaufruf
 
 ```bash
-curl http://<HA-IP>:8088/solar_api/v1/GetPowerFlowRealtimeData.cgi
+curl http://<HA-IP>:8088/solar_api/v1/GetPowerFlowRealtimeData.fcgi
 ```
