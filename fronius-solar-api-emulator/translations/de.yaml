@@ -1,0 +1,7 @@
+configuration:
+  port:
+    name: HTTP Port
+    description: Port auf dem die Fronius Solar API erreichbar ist.
+  log_level:
+    name: Log Level
+    description: Detailgrad der Protokollierung.
