@@ -1,6 +1,6 @@
 # Fronius Solar API Emulator – Home Assistant Add-on
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue)](CHANGELOG.md)
 [![HA Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-41bdf5)](https://www.home-assistant.io/addons)
 
 Dieses Home Assistant Add-on emuliert eine **Fronius Solar API V1**-Schnittstelle (Dokumentation: [42,0410,2012,EN](https://www.fronius.com/~/downloads/Solar%20Energy/Operating%20Instructions/42,0410,2012.pdf)) vollständig.
@@ -54,16 +54,30 @@ sensor_production_today: sensor.solar_manager_production_today
    http://<HA-IP>:8088/solar_api/v1/GetPowerFlowRealtimeData.fcgi
    ```
 
+## Automatische Einheiten-Konvertierung
+
+Das Add-on liest die `unit_of_measurement` jedes Sensors direkt aus den HA-Attributen
+und konvertiert automatisch:
+
+| Sensor-Einheit | Wird umgerechnet zu | Faktor |
+|---|---|---|
+| `kW` | `W` | ×1000 |
+| `kWh` | `Wh` | ×1000 |
+| `kVA`, `kvar` | `VA`, `var` | ×1000 |
+| `W`, `Wh`, `%` | unveraendert | ×1 |
+
+Damit funktioniert das Add-on sowohl mit Sensoren in W als auch in kW.
+
 ## Sensor-Bedeutung
 
 | Konfiguration | Bedeutung | Einheit |
 |---|---|---|
-| `sensor_pv` | PV-Erzeugungsleistung | W |
-| `sensor_power` | Hausverbrauch (Load) | W |
-| `sensor_grid` | Netzleistung (+ Bezug, − Einspeisung) | W |
+| `sensor_pv` | PV-Erzeugungsleistung | W oder kW |
+| `sensor_power` | Hausverbrauch (Load) | W oder kW |
+| `sensor_grid` | Netzleistung (+ Bezug, − Einspeisung) | W oder kW |
 | `sensor_soc` | Batterieladezustand | % |
-| `sensor_battery` | Batterieleistung (+ Laden, − Entladen) | W |
-| `sensor_production_today` | PV-Erzeugung heute | Wh |
+| `sensor_battery` | Batterieleistung (+ Laden, − Entladen) | W oder kW |
+| `sensor_production_today` | PV-Erzeugung heute | Wh oder kWh |
 
 ## Feldname-Konformität
 

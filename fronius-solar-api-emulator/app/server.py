@@ -27,6 +27,11 @@ GetPowerFlowRealtimeData (Listing 56-60):
   Site: P_PV, P_Grid, P_Load, P_Akku, E_Day, E_Total, E_Year
         Meter_Location, Mode, rel_Autonomy, rel_SelfConsumption
   Inverters: P, SOC, DT, E_Day, E_Total, E_Year, Battery_Mode, CID
+
+Einheiten-Konvertierung:
+  Sensoren in kW werden automatisch nach W konvertiert (Faktor 1000).
+  Sensoren in kWh werden automatisch nach Wh konvertiert (Faktor 1000).
+  Die unit_of_measurement wird direkt aus den HA-Sensor-Attributen gelesen.
 """
 
 import asyncio
@@ -73,7 +78,11 @@ def ok_head(request_arguments: dict) -> dict:
     }
 
 
-async def fetch_sensor(session: ClientSession, entity_id: str) -> float:
+async def fetch_sensor_raw(session: ClientSession, entity_id: str) -> tuple[float, str]:
+    """
+    Liefert (Wert, Einheit) direkt aus dem HA-State.
+    Unbekannte / unavailable Zustände => (0.0, "").
+    """
     headers = {"Authorization": f"Bearer {SUPERVISOR_TOKEN}"}
     url = f"{HA_API}/states/{entity_id}"
     try:
@@ -82,33 +91,68 @@ async def fetch_sensor(session: ClientSession, entity_id: str) -> float:
                 data = await resp.json()
                 state = data.get("state", "0")
                 if state in ("unavailable", "unknown", None, ""):
-                    return 0.0
-                return float(state)
+                    return 0.0, ""
+                unit = data.get("attributes", {}).get("unit_of_measurement", "")
+                return float(state), unit
     except Exception as e:
         log.warning(f"Could not fetch {entity_id}: {e}")
-    return 0.0
+    return 0.0, ""
+
+
+def to_watt(value: float, unit: str) -> float:
+    """
+    Konvertiert kW -> W automatisch.
+    W, VA, var bleiben unveraendert.
+    Alles andere wird unveraendert durchgereicht.
+    """
+    if unit in ("kW", "kVA", "kvar"):
+        return round(value * 1000, 3)
+    return value
+
+
+def to_wh(value: float, unit: str) -> float:
+    """
+    Konvertiert kWh -> Wh automatisch.
+    Wh bleibt unveraendert.
+    """
+    if unit == "kWh":
+        return round(value * 1000, 3)
+    return value
 
 
 async def fetch_all_sensors(session: ClientSession) -> dict:
     results = await asyncio.gather(
-        fetch_sensor(session, SENSOR_PV),
-        fetch_sensor(session, SENSOR_POWER),
-        fetch_sensor(session, SENSOR_GRID),
-        fetch_sensor(session, SENSOR_SOC),
-        fetch_sensor(session, SENSOR_BATTERY),
-        fetch_sensor(session, SENSOR_PRODUCTION_TODAY),
+        fetch_sensor_raw(session, SENSOR_PV),
+        fetch_sensor_raw(session, SENSOR_POWER),
+        fetch_sensor_raw(session, SENSOR_GRID),
+        fetch_sensor_raw(session, SENSOR_SOC),
+        fetch_sensor_raw(session, SENSOR_BATTERY),
+        fetch_sensor_raw(session, SENSOR_PRODUCTION_TODAY),
     )
+
+    # (Wert, Einheit) auspacken und in W / Wh konvertieren
+    pv_raw,      pv_unit      = results[0]
+    power_raw,   power_unit   = results[1]
+    grid_raw,    grid_unit    = results[2]
+    soc_raw,     _            = results[3]  # % bleibt unveraendert
+    bat_raw,     bat_unit     = results[4]
+    today_raw,   today_unit   = results[5]
+
     s = {
-        "pv":               results[0],
-        "power":            results[1],
-        "grid":             results[2],
-        "soc":              results[3],
-        "battery":          results[4],
-        "production_today": results[5],
+        "pv":               to_watt(pv_raw,    pv_unit),
+        "power":            to_watt(power_raw, power_unit),
+        "grid":             to_watt(grid_raw,  grid_unit),
+        "soc":              soc_raw,
+        "battery":          to_watt(bat_raw,   bat_unit),
+        "production_today": to_wh(today_raw,   today_unit),
     }
     log.debug(
-        f"Sensors: pv={s['pv']}W grid={s['grid']}W bat={s['battery']}W "
-        f"load={s['power']}W soc={s['soc']}% today={s['production_today']}Wh"
+        f"Sensors (nach Konvertierung): "
+        f"pv={s['pv']}W (raw={pv_raw}{pv_unit}) "
+        f"grid={s['grid']}W (raw={grid_raw}{grid_unit}) "
+        f"bat={s['battery']}W (raw={bat_raw}{bat_unit}) "
+        f"load={s['power']}W soc={s['soc']}% "
+        f"today={s['production_today']}Wh (raw={today_raw}{today_unit})"
     )
     return s
 
@@ -315,18 +359,7 @@ async def handle_inverter_realtime(request: web.Request) -> web.Response:
 
 async def handle_meter_realtime(request: web.Request) -> web.Response:
     """
-    Listing 42-45: Feldnamen EXAKT wie in der Doku (Unterstriche!):
-      Current_AC_Phase_1, Current_AC_Phase_2, Current_AC_Phase_3, Current_AC_Sum
-      PowerReal_P_Sum, PowerReal_P_Phase_1/2/3
-      EnergyReal_WAC_Minus_Absolute, EnergyReal_WAC_Plus_Absolute
-      EnergyReal_WAC_Sum_Consumed, EnergyReal_WAC_Sum_Produced
-      EnergyReactive_VArAC_Sum_Consumed, EnergyReactive_VArAC_Sum_Produced
-      Frequency_Phase_Average, Meter_Location_Current
-      PowerApparent_S_Phase_1/2/3, PowerApparent_S_Sum
-      PowerFactor_Phase_1/2/3, PowerFactor_Sum
-      PowerReactive_Q_Phase_1/2/3, PowerReactive_Q_Sum
-      TimeStamp, Enable, Visible
-      Voltage_AC_Phase_1/2/3, Voltage_AC_PhaseToPhase_12/23/31
+    Listing 42-45: Feldnamen EXAKT wie in der Doku (Unterstriche!).
     """
     scope     = request.rel_url.query.get("Scope", "System")
     device_id = request.rel_url.query.get("DeviceId", "0")
@@ -357,8 +390,7 @@ async def handle_meter_realtime(request: web.Request) -> web.Response:
         "Enable": 1,
         "EnergyReactive_VArAC_Sum_Consumed": 0,
         "EnergyReactive_VArAC_Sum_Produced": 0,
-        # WAC_Minus = Export zum Netz (Einspeisung)
-        # WAC_Plus  = Import vom Netz (Bezug)
+        # WAC_Minus = Export (Einspeisung), WAC_Plus = Import (Bezug)
         "EnergyReal_WAC_Minus_Absolute": max(0, round(-p_sum)),
         "EnergyReal_WAC_Plus_Absolute":  max(0, round( p_sum)),
         "EnergyReal_WAC_Sum_Consumed":   max(0, round( p_sum)),
@@ -408,13 +440,8 @@ async def handle_meter_realtime(request: web.Request) -> web.Response:
 
 async def handle_storage_realtime(request: web.Request) -> web.Response:
     """
-    Listing 47-51: Feldnamen EXAKT wie in der Doku:
-      StateOfCharge_Relative, Capacity_Maximum, DesignedCapacity
-      Current_DC, Voltage_DC, Temperature_Cell, Status_BatteryCell
-      Voltage_DC_Maximum_Cell, Voltage_DC_Minimum_Cell
-      Enable, TimeStamp
-    Status_BatteryCell (LG-Chem Controller):
-      1=STANDBY, 3=ENABLED, 5=FAULTED, 10=SLEEP
+    Listing 47-51: Feldnamen EXAKT wie in der Doku.
+    Status_BatteryCell (LG-Chem Controller): 1=STANDBY, 3=ENABLED
     """
     scope     = request.rel_url.query.get("Scope", "System")
     device_id = request.rel_url.query.get("DeviceId", "0")
@@ -423,16 +450,11 @@ async def handle_storage_realtime(request: web.Request) -> web.Response:
         s = await fetch_all_sensors(session)
 
     soc       = float(s["soc"])
-    bat_power = float(s["battery"])  # positiv=Laden, negativ=Entladen
+    bat_power = float(s["battery"])  # W, positiv=Laden, negativ=Entladen
     ts        = unix_timestamp()
     voltage   = 51.2
 
-    # Status_BatteryCell (LG-Chem Controller-Tabelle laut Doku):
-    # 1=STANDBY, 3=ENABLED, 5=FAULTED, 10=SLEEP
-    if abs(bat_power) > 50:
-        bat_status = 3   # ENABLED
-    else:
-        bat_status = 1   # STANDBY
+    bat_status = 3 if abs(bat_power) > 50 else 1
 
     storage_data = {
         "Controller": {
@@ -473,17 +495,7 @@ async def handle_storage_realtime(request: web.Request) -> web.Response:
 
 async def handle_powerflow_realtime(request: web.Request) -> web.Response:
     """
-    Listing 56-60: Feldnamen EXAKT wie in der Doku (Unterstriche!):
-    Site:
-      P_PV, P_Grid, P_Load, P_Akku
-      E_Day, E_Total, E_Year
-      Meter_Location, Mode
-      rel_Autonomy, rel_SelfConsumption
-      BackupMode, BatteryStandby
-    Inverters["1"]:
-      P, SOC, DT, CID
-      E_Day, E_Total, E_Year
-      Battery_Mode
+    Listing 56-60: Feldnamen EXAKT wie in der Doku (Unterstriche!).
     """
     async with ClientSession() as session:
         s = await fetch_all_sensors(session)
@@ -510,7 +522,10 @@ async def handle_powerflow_realtime(request: web.Request) -> web.Response:
 
     battery_standby = abs(bat) < 50
 
-    log.debug(f"PowerFlow: P_PV={pv}W P_Grid={grid}W P_Load={load}W P_Akku={bat}W SOC={soc}%")
+    log.debug(
+        f"PowerFlow: P_PV={pv}W P_Grid={grid}W P_Load={load}W "
+        f"P_Akku={bat}W SOC={soc}% E_Day={e_day}Wh"
+    )
 
     return web.json_response({
         "Head": ok_head({}),
@@ -593,12 +608,13 @@ def create_app() -> web.Application:
 
 
 if __name__ == "__main__":
-    log.info(f"Fronius Solar API Emulator v1.1.0 starting on port {PORT}")
+    log.info(f"Fronius Solar API Emulator v1.2.0 starting on port {PORT}")
     log.info(f"Sensor PV:               {SENSOR_PV}")
     log.info(f"Sensor Power (Load):     {SENSOR_POWER}")
     log.info(f"Sensor Grid:             {SENSOR_GRID}")
     log.info(f"Sensor SOC:              {SENSOR_SOC}")
     log.info(f"Sensor Battery:          {SENSOR_BATTERY}")
     log.info(f"Sensor Production Today: {SENSOR_PRODUCTION_TODAY}")
+    log.info("Automatische Einheiten-Konvertierung: kW->W, kWh->Wh")
     app = create_app()
     web.run_app(app, host="0.0.0.0", port=PORT)

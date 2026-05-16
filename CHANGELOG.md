@@ -2,6 +2,23 @@
 
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.2.0] - 2026-05-16
+
+### Hinzugefügt
+- **Automatische Einheiten-Konvertierung**: Die `unit_of_measurement` jedes HA-Sensors wird
+  direkt ausgelesen und automatisch konvertiert:
+  - `kW` → `W` (Faktor ×1000) – behebt falsche Werte (z.B. `1.206` statt `1206`)
+  - `kWh` → `Wh` (Faktor ×1000)
+  - `kVA`, `kvar` → `VA`, `var` (Faktor ×1000)
+  - `W`, `Wh`, `%` bleiben unveraendert
+- Alle Leistungs- und Energiewerte (PV, Grid, Load, Battery, Production Today)
+  werden jetzt einheitenunabhaengig korrekt in Watt / Wh geliefert
+- Debug-Log zeigt jetzt Rohwert+Einheit und konvertierten Wert
+
+### Behoben
+- Solar Manager zeigte 1 Watt PV-Leistung obwohl z.B. 1206 W erzeugt wurden,
+  weil der HA-Sensor `sensor.solar_manager_power_pv` in kW liefert
+
 ## [1.1.0] - 2026-05-16
 
 ### Behoben – Kritische Feldnamen-Korrekturen laut Fronius Solar API V1 Doku (42,0410,2012,EN)
@@ -18,51 +35,19 @@ Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert
   - `PowerFactor_Phase_1/2/3`, `PowerFactor_Sum`
   - `PowerReactive_Q_Phase_1/2/3`, `PowerReactive_Q_Sum`
   - `Voltage_AC_Phase_1/2/3`, `Voltage_AC_PhaseToPhase_12/23/31`
-- `Current_AC_Phase_*` ist jetzt vorzeichenbehaftet (wie UL/TS-Meter laut Doku)
-- Frühere CamelCase-Feldnamen (z.B. `CurrentACPhase1`, `PowerRealPSum`) sind behoben
 
 **`GetPowerFlowRealtimeData`** (Listing 56-60):
-- Alle Site-Felder jetzt EXAKT mit Unterstrichen:
-  - `P_PV`, `P_Grid`, `P_Load`, `P_Akku` (nicht `PPV`, `PGrid`, `PLoad`, `PAkku`)
-  - `E_Day`, `E_Total`, `E_Year` (nicht `EDay`, `ETotal`, `EYear`)
-  - `Meter_Location` (nicht `MeterLocation`)
-  - `rel_Autonomy`, `rel_SelfConsumption` (nicht `relAutonomy`, `relSelfConsumption`)
-- `BackupMode`, `BatteryStandby` ergänzt
-- Inverter: `Battery_Mode` (nicht `BatteryMode`), `CID` ergänzt
-
-**`GetStorageRealtimeData`** (Listing 47-51):
-- `Status_BatteryCell`-Logik: jetzt ENABLED (3) für Laden UND Entladen
-
-**`GetInverterRealtimeData`** (Listing 7, 14):
-- `InverterState: "Running"` zu `DeviceStatus` ergänzt (GEN24-Kompatibilität, Listing 10)
-- Timestamp-Format auf RFC3339 mit korrekter Zeitzone korrigiert
-- `unavailable`/`unknown`-Sensorstatus wird als `0.0` behandelt
+- `P_PV`, `P_Grid`, `P_Load`, `P_Akku`, `E_Day`, `Meter_Location`, `rel_Autonomy` etc.
+- `BackupMode`, `BatteryStandby`, `Battery_Mode`, `CID` ergänzt
 
 ### Hinzugefügt
-- Neuer Endpunkt `GetInverterInfo.cgi` (Listing 31-33)
-- Deutsche und englische UI-Übersetzungen (`translations/de.yaml`, `translations/en.yaml`)
+- Neuer Endpunkt `GetInverterInfo.cgi`
+- Deutsche und englische UI-Übersetzungen
 
 ## [1.0.7] - 2026-05-16
 
 ### Behoben
-- Vollständiger Abgleich aller Feldnamen mit der offiziellen Fronius Solar API V1 Dokumentation (42,0410,2012,EN)
-
-**`GetInverterRealtimeData`** (Listing 4, 7, 14):
-- `DAY_ENERGY`, `YEAR_ENERGY`, `TOTAL_ENERGY` (MIT Unterstrich) – korrekter Feldname laut Doku
-- Scope=System: `Values`-Objekt statt `Value` (Listing 14)
-- `3PInverterData`: `IAC_L1`, `IAC_L2`, `IAC_L3`, `UAC_L1`, `UAC_L2`, `UAC_L3` (Listing 8)
-
-**`GetMeterRealtimeData`** (Listing 43, 45):
-- Erste Implementierung CamelCase (noch nicht korrekt)
-
-**`GetStorageRealtimeData`** (Listing 48):
-- Feldnamen: `StateOfCharge_Relative`, `Capacity_Maximum`, `DesignedCapacity`, `Current_DC`, `Voltage_DC`, `Temperature_Cell`, `Status_BatteryCell`
-
-**`GetPowerFlowRealtimeData`** (Listing 57-60):
-- Erste Implementierung (Feldnamen noch ohne Unterstriche)
-
-**`GetActiveDeviceInfo`**:
-- Meter und Storage: `DT: -1`
+- Vollständiger Abgleich aller Feldnamen mit der offiziellen Fronius Solar API V1 Dokumentation
 
 ## [1.0.6] - 2026-05-16
 
