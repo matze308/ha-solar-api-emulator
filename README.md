@@ -1,19 +1,20 @@
 # Fronius Solar API Emulator - Home Assistant Addon
 
-[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Ein Home Assistant Addon, das die Fronius Solar API V1 simuliert. Es emuliert einen Wechselrichter (Inverter), Batteriespeicher (Storage) und Smart Meter basierend auf echten Sensordaten aus Home Assistant.
 
 ## Features
 
-- **Wechselrichter (Inverter):** `GetInverterRealtimeData` – CommonInverterData, CumulationInverterData, 3PInverterData
-- **Smart Meter:** `GetMeterRealtimeData` – System & Device Scope
-- **Batteriespeicher:** `GetStorageRealtimeData` – System & Device Scope
-- **PowerFlow:** `GetPowerFlowRealtimeData` – Echtzeit-Energiefluss
+- **Wechselrichter (Inverter):** `GetInverterRealtimeData`
+- **Smart Meter:** `GetMeterRealtimeData`
+- **Batteriespeicher:** `GetStorageRealtimeData`
+- **PowerFlow:** `GetPowerFlowRealtimeData`
 - **Logger Info:** `GetLoggerInfo`, `GetAPIVersion`
 - **Aktive Geräte:** `GetActiveDeviceInfo`
-- **Lokaler Build:** Kein externes Container-Image nötig – baut direkt aus dem Dockerfile
+- **Lokaler Build:** Kein externes Container-Image nötig
+- **Beide URL-Varianten:** Antwortet auf `.cgi` und `.fcgi` Endpunkte
 
 ## Verwendete Home Assistant Entitäten
 
@@ -34,8 +35,7 @@ Ein Home Assistant Addon, das die Fronius Solar API V1 simuliert. Es emuliert ei
    ```
    https://github.com/matze308/ha-solar-api-emulator
    ```
-4. Suche nach **Fronius Solar API Emulator** und installiere es
-5. Port konfigurieren (Standard: `8088`) und Add-on starten
+4. Suche nach **Fronius Solar API Emulator**, installieren und starten
 
 ## Konfiguration
 
@@ -46,17 +46,17 @@ log_level: info
 
 ## API-Endpunkte
 
-Nach dem Start erreichbar unter `http://<HA-IP>:8088`:
+Nach dem Start erreichbar unter `http://<HA-IP>:8088` – jeweils als `.cgi` und `.fcgi`:
 
 | Endpunkt | Beschreibung |
 |---|---|
-| `GET /solar_api/GetAPIVersion.cgi` | API Version |
-| `GET /solar_api/v1/GetInverterRealtimeData.cgi` | Wechselrichter Daten |
-| `GET /solar_api/v1/GetMeterRealtimeData.cgi` | Smart Meter Daten |
-| `GET /solar_api/v1/GetStorageRealtimeData.cgi` | Batteriespeicher Daten |
-| `GET /solar_api/v1/GetPowerFlowRealtimeData.cgi` | Energiefluss Daten |
-| `GET /solar_api/v1/GetLoggerInfo.cgi` | Logger Informationen |
-| `GET /solar_api/v1/GetActiveDeviceInfo.cgi` | Aktive Geräte |
+| `/solar_api/GetAPIVersion.cgi` | API Version |
+| `/solar_api/v1/GetInverterRealtimeData.cgi` | Wechselrichter Daten |
+| `/solar_api/v1/GetMeterRealtimeData.cgi` | Smart Meter Daten |
+| `/solar_api/v1/GetStorageRealtimeData.cgi` | Batteriespeicher Daten |
+| `/solar_api/v1/GetPowerFlowRealtimeData.cgi` | Energiefluss Daten |
+| `/solar_api/v1/GetLoggerInfo.cgi` | Logger Informationen |
+| `/solar_api/v1/GetActiveDeviceInfo.cgi` | Aktive Geräte |
 
 ## Changelog
 

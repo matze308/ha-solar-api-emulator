@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 
 from aiohttp import web, ClientSession, ClientTimeout
 
@@ -30,10 +30,8 @@ SENSOR_PRODUCTION_TODAY = "sensor.solar_manager_production_today"
 
 
 def now_timestamp() -> str:
-    """Return current timestamp in Fronius format."""
     now = datetime.now()
-    tz_offset = "+0200"
-    return now.strftime("%Y-%m-%dT%H%M%S") + tz_offset
+    return now.strftime("%Y-%m-%dT%H%M%S") + "+0200"
 
 
 def unix_timestamp() -> int:
@@ -49,7 +47,6 @@ def ok_head(request_arguments: dict) -> dict:
 
 
 async def fetch_sensor(session: ClientSession, entity_id: str) -> float:
-    """Fetch a single sensor state from Home Assistant API."""
     headers = {"Authorization": f"Bearer {SUPERVISOR_TOKEN}"}
     url = f"{HA_API}/states/{entity_id}"
     try:
@@ -63,7 +60,6 @@ async def fetch_sensor(session: ClientSession, entity_id: str) -> float:
 
 
 async def fetch_all_sensors(session: ClientSession) -> dict:
-    """Fetch all required sensor values."""
     results = await asyncio.gather(
         fetch_sensor(session, SENSOR_PV),
         fetch_sensor(session, SENSOR_POWER),
@@ -146,7 +142,7 @@ async def handle_inverter_realtime(request: web.Request) -> web.Response:
     async with ClientSession() as session:
         s = await fetch_all_sensors(session)
 
-    pac = int(s["pv"])  # PV-Leistung als AC-Leistung des Wechselrichters
+    pac = int(s["pv"])
     day_energy = float(s["production_today"])
     uac = 230.0
     udc = 380.0
@@ -174,17 +170,12 @@ async def handle_inverter_realtime(request: web.Request) -> web.Response:
         }
         return web.json_response({"Head": ok_head(req_args), "Body": {"Data": data}})
 
-    # Scope Device
     if collection == "CommonInverterData":
         data = {
             "DAY_ENERGY": {"Unit": "Wh", "Value": day_energy},
             "DeviceStatus": {
-                "ErrorCode": 0,
-                "LEDColor": 2,
-                "LEDState": 0,
-                "MgmtTimerRemainingTime": -1,
-                "StateToReset": False,
-                "StatusCode": 7,
+                "ErrorCode": 0, "LEDColor": 2, "LEDState": 0,
+                "MgmtTimerRemainingTime": -1, "StateToReset": False, "StatusCode": 7,
             },
             "FAC": {"Unit": "Hz", "Value": fac},
             "IAC": {"Unit": "A", "Value": iac},
@@ -202,12 +193,8 @@ async def handle_inverter_realtime(request: web.Request) -> web.Response:
             "TOTAL_ENERGY": {"Unit": "Wh", "Value": day_energy * 365},
             "YEAR_ENERGY": {"Unit": "Wh", "Value": day_energy * 250},
             "DeviceStatus": {
-                "ErrorCode": 0,
-                "LEDColor": 2,
-                "LEDState": 0,
-                "MgmtTimerRemainingTime": -1,
-                "StateToReset": False,
-                "StatusCode": 7,
+                "ErrorCode": 0, "LEDColor": 2, "LEDState": 0,
+                "MgmtTimerRemainingTime": -1, "StateToReset": False, "StatusCode": 7,
             },
         }
     elif collection == "3PInverterData":
@@ -233,16 +220,13 @@ async def handle_meter_realtime(request: web.Request) -> web.Response:
     async with ClientSession() as session:
         s = await fetch_all_sensors(session)
 
-    # Netzleistung: positiv = Bezug, negativ = Einspeisung
     grid_power = float(s["grid"])
     p_sum = grid_power
     p_phase = round(p_sum / 3, 3)
     uac = 232.0
     iac = abs(round(p_sum / (uac * 3), 3)) if p_sum != 0 else 0.0
-
-    # Energie-Counter (simuliert)
     ts = unix_timestamp()
-    energy_consumed = max(0, p_sum) * 0.01  # vereinfachter Zähler
+    energy_consumed = max(0, p_sum) * 0.01
     energy_produced = max(0, -p_sum) * 0.01
 
     meter_data = {
@@ -250,11 +234,7 @@ async def handle_meter_realtime(request: web.Request) -> web.Response:
         "CurrentACPhase2": round(iac, 3),
         "CurrentACPhase3": round(iac, 3),
         "CurrentACSum": round(iac * 3, 3),
-        "Details": {
-            "Manufacturer": "Fronius",
-            "Model": "Smart Meter 63A-3",
-            "Serial": "SM-EMULATOR-001",
-        },
+        "Details": {"Manufacturer": "Fronius", "Model": "Smart Meter 63A-3", "Serial": "SM-EMULATOR-001"},
         "Enable": 1,
         "EnergyReactiveVArACSumConsumed": 0,
         "EnergyReactiveVArACSumProduced": 0,
@@ -268,27 +248,16 @@ async def handle_meter_realtime(request: web.Request) -> web.Response:
         "PowerApparentSPhase2": abs(p_phase),
         "PowerApparentSPhase3": abs(p_phase),
         "PowerApparentSSum": abs(p_sum),
-        "PowerFactorPhase1": 1.0,
-        "PowerFactorPhase2": 1.0,
-        "PowerFactorPhase3": 1.0,
-        "PowerFactorSum": 1.0,
-        "PowerReactiveQPhase1": 0,
-        "PowerReactiveQPhase2": 0,
-        "PowerReactiveQPhase3": 0,
-        "PowerReactiveQSum": 0,
+        "PowerFactorPhase1": 1.0, "PowerFactorPhase2": 1.0, "PowerFactorPhase3": 1.0, "PowerFactorSum": 1.0,
+        "PowerReactiveQPhase1": 0, "PowerReactiveQPhase2": 0, "PowerReactiveQPhase3": 0, "PowerReactiveQSum": 0,
         "PowerRealPPhase1": round(p_phase, 3),
         "PowerRealPPhase2": round(p_phase, 3),
         "PowerRealPPhase3": round(p_phase, 3),
         "PowerRealPSum": round(p_sum, 3),
         "TimeStamp": ts,
         "Visible": 1,
-        "VoltageACPhaseToPhase12": 400.0,
-        "VoltageACPhaseToPhase23": 400.0,
-        "VoltageACPhaseToPhase31": 400.0,
-        "VoltageACPhase1": uac,
-        "VoltageACPhase2": uac,
-        "VoltageACPhase3": uac,
-        "VoltageACPhaseAverage": uac,
+        "VoltageACPhaseToPhase12": 400.0, "VoltageACPhaseToPhase23": 400.0, "VoltageACPhaseToPhase31": 400.0,
+        "VoltageACPhase1": uac, "VoltageACPhase2": uac, "VoltageACPhase3": uac, "VoltageACPhaseAverage": uac,
     }
 
     if scope == "System":
@@ -309,37 +278,29 @@ async def handle_storage_realtime(request: web.Request) -> web.Response:
         s = await fetch_all_sensors(session)
 
     soc = float(s["soc"])
-    bat_power = float(s["battery"])  # positiv = Laden, negativ = Entladen
-    bat_current = round(bat_power / 51.2, 2)  # 48V Nennspannung angenommen
-    bat_voltage = 51.2
-    capacity_max = 10000  # Wh (10 kWh Batterie)
-    designed_capacity = 10000
+    bat_power = float(s["battery"])
+    bat_current = round(bat_power / 51.2, 2)
     ts = unix_timestamp()
 
-    # StatusBatteryCell: 3 = Normal Charge, 5 = Normal Discharge, 1 = Pre Charge
     if bat_power > 50:
-        status = 3  # Charging
+        status = 3
     elif bat_power < -50:
-        status = 5  # Discharging
+        status = 5
     else:
-        status = 1  # Standby
+        status = 1
 
     storage_data = {
         "Controller": {
-            "CapacityMaximum": capacity_max,
+            "CapacityMaximum": 10000,
             "CurrentDC": bat_current,
-            "DesignedCapacity": designed_capacity,
-            "Details": {
-                "Manufacturer": "Fronius",
-                "Model": "Fronius Solar Battery 10.0",
-                "Serial": "BAT-EMULATOR-001",
-            },
+            "DesignedCapacity": 10000,
+            "Details": {"Manufacturer": "Fronius", "Model": "Fronius Solar Battery 10.0", "Serial": "BAT-EMULATOR-001"},
             "Enable": 1,
             "StateOfChargeRelative": soc,
             "StatusBatteryCell": status,
             "TemperatureCell": 25.0,
             "TimeStamp": ts,
-            "VoltageDC": bat_voltage,
+            "VoltageDC": 51.2,
             "VoltageDCMaximumCell": 3.65,
             "VoltageDCMinimumCell": 3.0,
         },
@@ -361,18 +322,16 @@ async def handle_powerflow_realtime(request: web.Request) -> web.Response:
         s = await fetch_all_sensors(session)
 
     pv = float(s["pv"])
-    grid = float(s["grid"])   # positiv = Bezug, negativ = Einspeisung
-    bat = float(s["battery"])  # positiv = Laden
-    load = float(s["power"])  # Hausverbrauch
+    grid = float(s["grid"])
+    bat = float(s["battery"])
+    load = float(s["power"])
     soc = float(s["soc"])
     day_energy = float(s["production_today"])
 
-    # Relative energy
     e_day = day_energy
     e_year = day_energy * 250
     e_total = day_energy * 365
 
-    # P_Grid: negative means feed-in to grid
     p_grid = grid if grid != 0 else None
     p_pv = pv if pv > 0 else None
     p_bat = bat if abs(bat) > 1 else None
@@ -413,15 +372,44 @@ async def handle_powerflow_realtime(request: web.Request) -> web.Response:
     return web.json_response(body)
 
 
+def add_routes(app: web.Application, handler, *paths):
+    """Register a handler for multiple URL paths (e.g. .cgi and .fcgi variants)."""
+    for path in paths:
+        app.router.add_get(path, handler)
+
+
 def create_app() -> web.Application:
     app = web.Application()
-    app.router.add_get("/solar_api/GetAPIVersion.cgi", handle_api_version)
-    app.router.add_get("/solar_api/v1/GetLoggerInfo.cgi", handle_logger_info)
-    app.router.add_get("/solar_api/v1/GetActiveDeviceInfo.cgi", handle_active_device_info)
-    app.router.add_get("/solar_api/v1/GetInverterRealtimeData.cgi", handle_inverter_realtime)
-    app.router.add_get("/solar_api/v1/GetMeterRealtimeData.cgi", handle_meter_realtime)
-    app.router.add_get("/solar_api/v1/GetStorageRealtimeData.cgi", handle_storage_realtime)
-    app.router.add_get("/solar_api/v1/GetPowerFlowRealtimeData.cgi", handle_powerflow_realtime)
+
+    # GetAPIVersion - root level, both variants
+    add_routes(app, handle_api_version,
+        "/solar_api/GetAPIVersion.cgi",
+        "/solar_api/GetAPIVersion.fcgi",
+    )
+    add_routes(app, handle_logger_info,
+        "/solar_api/v1/GetLoggerInfo.cgi",
+        "/solar_api/v1/GetLoggerInfo.fcgi",
+    )
+    add_routes(app, handle_active_device_info,
+        "/solar_api/v1/GetActiveDeviceInfo.cgi",
+        "/solar_api/v1/GetActiveDeviceInfo.fcgi",
+    )
+    add_routes(app, handle_inverter_realtime,
+        "/solar_api/v1/GetInverterRealtimeData.cgi",
+        "/solar_api/v1/GetInverterRealtimeData.fcgi",
+    )
+    add_routes(app, handle_meter_realtime,
+        "/solar_api/v1/GetMeterRealtimeData.cgi",
+        "/solar_api/v1/GetMeterRealtimeData.fcgi",
+    )
+    add_routes(app, handle_storage_realtime,
+        "/solar_api/v1/GetStorageRealtimeData.cgi",
+        "/solar_api/v1/GetStorageRealtimeData.fcgi",
+    )
+    add_routes(app, handle_powerflow_realtime,
+        "/solar_api/v1/GetPowerFlowRealtimeData.cgi",
+        "/solar_api/v1/GetPowerFlowRealtimeData.fcgi",
+    )
     return app
 
 
