@@ -1,25 +1,25 @@
 configuration:
   port:
-    name: HTTP Port
-    description: Port auf dem die Fronius Solar API erreichbar ist.
+    name: Port
+    description: TCP-Port, auf dem der Fronius Solar API Emulator lauscht.
   log_level:
-    name: Log Level
-    description: Detailgrad der Protokollierung.
+    name: Log-Level
+    description: Detailgrad der Add-on-Protokollausgabe.
   sensor_pv:
-    name: Sensor PV-Leistung
-    description: Home Assistant Entität für die aktuelle PV-Leistung in Watt.
+    name: PV-Leistungssensor
+    description: Home-Assistant-Sensor-Entität für die PV-Erzeugungsleistung (W).
   sensor_power:
-    name: Sensor Hausverbrauch
-    description: Home Assistant Entität für den aktuellen Hausverbrauch in Watt.
+    name: Verbrauchsleistungssensor
+    description: Home-Assistant-Sensor-Entität für den Hausverbrauch (W).
   sensor_grid:
-    name: Sensor Netzleistung
-    description: Home Assistant Entität für die Netzleistung in Watt (positiv = Bezug, negativ = Einspeisung).
+    name: Netzleistungssensor
+    description: Home-Assistant-Sensor-Entität für die Netzleistung (positiv = Bezug, negativ = Einspeisung) (W).
   sensor_soc:
-    name: Sensor Batterieladezustand
-    description: Home Assistant Entität für den Batterieladezustand in Prozent.
+    name: Batterie-SOC-Sensor
+    description: Home-Assistant-Sensor-Entität für den Batterieladezustand (%).
   sensor_battery:
-    name: Sensor Batterieleistung
-    description: Home Assistant Entität für die Batterieleistung in Watt (positiv = Laden, negativ = Entladen).
+    name: Batterieleistungssensor
+    description: Home-Assistant-Sensor-Entität für die Batterieleistung (positiv = Laden, negativ = Entladen) (W).
   sensor_production_today:
-    name: Sensor Tagesertrag
-    description: Home Assistant Entität für den heutigen PV-Ertrag in Wattstunden.
+    name: Heutige-Erzeugung-Sensor
+    description: Home-Assistant-Sensor-Entität für die heutige PV-Energieerzeugung (Wh).

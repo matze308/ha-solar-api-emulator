@@ -1,15 +1,21 @@
-# Fronius Solar API Emulator
+# Fronius Solar API Emulator – Dokumentation
 
-Dieses Add-on simuliert die Fronius Solar API V1 auf Basis vorhandener Home-Assistant-Sensoren.
-Es emuliert einen Wechselrichter (Inverter), Batteriespeicher (Storage) und Smart Meter.
+Dieses Add-on emuliert die **Fronius Solar API V1** (Dokumentation: 42,0410,2012,EN) vollständig, sodass externe Systeme wie **Solar Manager**, **evcc** oder andere Energiemanager den Fronius-Wechselrichter inkl. Batterie und Smart Meter abfragen können.
 
-## Installation
+## Emulierte API-Endpunkte
 
-1. Add-on installieren
-2. Sensor-Entitäten und Port konfigurieren
-3. Add-on starten
+| Endpunkt | Beschreibung |
+|---|---|
+| `GET /solar_api/GetAPIVersion.cgi` | API-Version |
+| `GET /solar_api/v1/GetLoggerInfo.cgi` | Logger-Informationen |
+| `GET /solar_api/v1/GetInverterInfo.cgi` | Wechselrichter-Informationen |
+| `GET /solar_api/v1/GetActiveDeviceInfo.cgi` | Aktive Geräte |
+| `GET /solar_api/v1/GetInverterRealtimeData.cgi` | Wechselrichter Echtzeitdaten |
+| `GET /solar_api/v1/GetMeterRealtimeData.cgi` | Smart Meter Echtzeitdaten |
+| `GET /solar_api/v1/GetStorageRealtimeData.cgi` | Batteriespeicher Echtzeitdaten |
+| `GET /solar_api/v1/GetPowerFlowRealtimeData.fcgi` | Leistungsfluss Echtzeitdaten |
 
-> **Hinweis:** Dieses Add-on baut lokal aus dem Dockerfile und benötigt kein externes Container-Registry-Image.
+Alle Endpunkte sind sowohl als `.cgi` als auch als `.fcgi` erreichbar.
 
 ## Konfiguration
 
@@ -24,33 +30,31 @@ sensor_battery: sensor.solar_manager_power_battery
 sensor_production_today: sensor.solar_manager_production_today
 ```
 
-| Option | Beschreibung | Standard |
+### Sensor-Bedeutung
+
+| Option | Bedeutung | Einheit |
 |---|---|---|
-| `port` | HTTP-Port der Fronius API | `8088` |
-| `log_level` | Log-Level (debug, info, warning, error) | `info` |
-| `sensor_pv` | Entität für PV-Leistung (W) | `sensor.solar_manager_power_pv` |
-| `sensor_power` | Entität für Hausverbrauch (W) | `sensor.solar_manager_power` |
-| `sensor_grid` | Entität für Netzleistung (W, pos.=Bezug, neg.=Einspeisung) | `sensor.solar_manager_power_grid` |
-| `sensor_soc` | Entität für Batterieladezustand (%) | `sensor.solar_manager_soc` |
-| `sensor_battery` | Entität für Batterieleistung (W, pos.=Laden, neg.=Entladen) | `sensor.solar_manager_power_battery` |
-| `sensor_production_today` | Entität für Tagesertrag (Wh) | `sensor.solar_manager_production_today` |
+| `sensor_pv` | PV-Erzeugungsleistung | W |
+| `sensor_power` | Hausverbrauch (Load) | W |
+| `sensor_grid` | Netzleistung (+ Bezug, − Einspeisung) | W |
+| `sensor_soc` | Batterieladezustand | % |
+| `sensor_battery` | Batterieleistung (+ Laden, − Entladen) | W |
+| `sensor_production_today` | PV-Erzeugung heute | Wh |
 
-## API-Endpunkte
+## Feldname-Konformität
 
-Nach dem Start erreichbar unter `http://<HA-IP>:8088` – jeweils als `.cgi` und `.fcgi`:
+Die Feldnamen entsprechen exakt der offiziellen Fronius Solar API V1 Dokumentation:
 
-| Endpunkt | Beschreibung |
-|---|---|
-| `/solar_api/GetAPIVersion.cgi` | API-Version |
-| `/solar_api/v1/GetInverterRealtimeData.cgi` | Wechselrichter-Daten |
-| `/solar_api/v1/GetMeterRealtimeData.cgi` | Smart Meter-Daten |
-| `/solar_api/v1/GetStorageRealtimeData.cgi` | Batteriespeicher-Daten |
-| `/solar_api/v1/GetPowerFlowRealtimeData.cgi` | Echtzeit-Energiefluss |
-| `/solar_api/v1/GetLoggerInfo.cgi` | Logger-Informationen |
-| `/solar_api/v1/GetActiveDeviceInfo.cgi` | Aktive Geräte |
+- **GetMeterRealtimeData**: `Current_AC_Phase_1`, `PowerReal_P_Sum`, `EnergyReal_WAC_Minus_Absolute` etc.
+- **GetStorageRealtimeData**: `StateOfCharge_Relative`, `Capacity_Maximum`, `Current_DC` etc.
+- **GetPowerFlowRealtimeData**: `P_PV`, `P_Grid`, `P_Load`, `P_Akku`, `E_Day`, `rel_Autonomy` etc.
+- **GetInverterRealtimeData**: `DAY_ENERGY`, `YEAR_ENERGY`, `TOTAL_ENERGY`, `PAC`, `IAC`, `IDC` etc.
 
-## Beispielaufruf
+## Zugriff
 
-```bash
-curl http://<HA-IP>:8088/solar_api/v1/GetPowerFlowRealtimeData.fcgi
+Nach dem Start ist die API unter `http://<HA-IP>:8088` erreichbar.
+
+Beispiel:
+```
+http://192.168.1.100:8088/solar_api/v1/GetPowerFlowRealtimeData.fcgi
 ```

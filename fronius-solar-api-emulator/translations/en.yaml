@@ -1,0 +1,25 @@
+configuration:
+  port:
+    name: Port
+    description: TCP port on which the Fronius Solar API emulator listens.
+  log_level:
+    name: Log Level
+    description: Verbosity of the add-on log output.
+  sensor_pv:
+    name: PV Power Sensor
+    description: Home Assistant sensor entity for PV generation power (W).
+  sensor_power:
+    name: Load Power Sensor
+    description: Home Assistant sensor entity for household load power (W).
+  sensor_grid:
+    name: Grid Power Sensor
+    description: Home Assistant sensor entity for grid power (positive = import, negative = export) (W).
+  sensor_soc:
+    name: Battery SOC Sensor
+    description: Home Assistant sensor entity for battery state of charge (%).
+  sensor_battery:
+    name: Battery Power Sensor
+    description: Home Assistant sensor entity for battery power (positive = charging, negative = discharging) (W).
+  sensor_production_today:
+    name: Production Today Sensor
+    description: Home Assistant sensor entity for today's PV energy production (Wh).
