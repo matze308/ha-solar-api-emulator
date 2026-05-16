@@ -1,6 +1,6 @@
 # Fronius Solar API Emulator – Home Assistant Add-on
 
-[![Version](https://img.shields.io/badge/version-1.2.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.2-blue)](fronius-solar-api-emulator/CHANGELOG.md)
 [![HA Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-41bdf5)](https://www.home-assistant.io/addons)
 
 Dieses Home Assistant Add-on emuliert eine **Fronius Solar API V1**-Schnittstelle vollständig.
@@ -82,4 +82,4 @@ und konvertiert automatisch:
 
 ## Changelog
 
-Siehe [CHANGELOG.md](CHANGELOG.md).
+Siehe [CHANGELOG.md](fronius-solar-api-emulator/CHANGELOG.md).

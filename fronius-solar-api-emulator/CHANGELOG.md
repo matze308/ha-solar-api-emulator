@@ -2,9 +2,6 @@
 
 Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
-Der vollständige Changelog befindet sich im Add-on-Verzeichnis:
-[fronius-solar-api-emulator/CHANGELOG.md](fronius-solar-api-emulator/CHANGELOG.md)
-
 ## [1.2.2] - 2026-05-16
 
 ### Geändert
